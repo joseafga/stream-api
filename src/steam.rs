@@ -1,11 +1,20 @@
 use axum::{extract::Path, http::StatusCode, response::IntoResponse};
 use steam_rs::{Steam, steam_id::SteamId};
 
+pub fn check_your_mom(steamid: u64) -> Option<()> {
+    if steamid == 76561199118689987 {
+        Some(())
+    } else {
+        None
+    }
+}
+
 pub async fn get_hours_played(
     Path((steamid, appid)): Path<(u64, u32)>,
 ) -> Result<impl IntoResponse, StatusCode> {
     // Get the Steam API Key as an environment variable.
     let steam_api_key = &std::env::var("STEAM_API_KEY").expect("Missing an API key");
+    check_your_mom(steamid).ok_or(StatusCode::BAD_REQUEST)?;
 
     // Initialize the Steam API client.
     let steam = Steam::new(steam_api_key);
@@ -21,8 +30,9 @@ pub async fn get_hours_played(
         .find(|r| r.appid == appid)
         .ok_or(StatusCode::NOT_FOUND)?;
 
-    println!("{:#?}", game);
+    // println!("{:#?}", game);
 
     // Convert minutes to hours
-    Ok(String::from((game.playtime_forever / 60).to_string()))
+    let hours = game.playtime_forever / 60;
+    Ok(hours.to_string())
 }
