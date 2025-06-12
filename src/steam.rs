@@ -2,10 +2,9 @@ use axum::{extract::Path, http::StatusCode, response::IntoResponse};
 use steam_rs::{Steam, steam_id::SteamId};
 
 pub fn check_your_mom(steamid: u64) -> Option<()> {
-    if steamid == 76561199118689987 {
-        Some(())
-    } else {
-        None
+    match steamid {
+        76561199118689987 => Some(()),
+        _ => None,
     }
 }
 
