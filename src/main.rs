@@ -4,6 +4,7 @@ use tower::{BoxError, ServiceBuilder};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+mod sentence;
 mod steam;
 
 #[tokio::main]
@@ -24,6 +25,8 @@ async fn main() {
             "/steam/{steamid}/{appid}/hours",
             get(steam::get_hours_played),
         )
+        .route("/sentence/thyria/", get(sentence::get_sentence_thyria_rng))
+        .route("/sentence/thyria/{id}", get(sentence::get_sentence_thyria))
         // Add middleware to all routes
         .layer(
             ServiceBuilder::new()
