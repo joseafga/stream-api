@@ -25,8 +25,7 @@ async fn main() {
             "/steam/{steamid}/{appid}/hours",
             get(steam::get_hours_played),
         )
-        .route("/sentence/thyria/", get(sentence::get_sentence_thyria_rng))
-        .route("/sentence/thyria/{id}", get(sentence::get_sentence_thyria))
+        .route("/sentence/{*name}", get(sentence::get_sentence))
         // Add middleware to all routes
         .layer(
             ServiceBuilder::new()
