@@ -1,33 +1,34 @@
 use axum::{extract::Path, http::StatusCode, response::IntoResponse};
 use rand::seq::IndexedRandom;
-// use serde::Deserialize;
 
 pub fn get_sentence_thyria(id: Option<usize>) -> String {
     let sentences = [
-        "Não me tira, não me tira GlitchNRG",
-        "Antes que eu me esqueça, vai tomar no cool raissa11RaiBRAVA",
-        "Você é muito ruim, podre, lixo raissa11Faquinha",
-        "Vai tomando raissa11NEA",
-        "Certeza que sua mãe usa saia Kappa",
-        "Beijos da tia Thy 🥰",
-        "MANO, VOCÊ SABE QUE TEM 4 GEN UP SEU FILHO DA PULGA raissa11RaiBRAVA",
-        "Vai dar meia hora com relógio parado 🤭",
-        "Vai taca taca taca 🎶",
-        "Bom dia senhora raissa112anosdecanal",
-        "Eu sou uma rata senhoraa raissa11RAI",
-        "Sua mãe toma banho em pé CoolCat",
-        "Sua mãe dorme deitada NotLikeThis",
-        "Sua mãe nasceu pelada BabyRage",
-        "Vem meu casquinha de bala KomodoHype",
-        "Eu te batizo em nome de Jane Romero FBBlock",
-        "Toma então, batizado PowerUpR",
-        "Bruxa, fedida, tomara que te dor de barriga 🎶",
+        "Não me tira, não me tira GlitchNRG", // 0
+        "Antes que eu me esqueça, vai tomar no cool raissa11RaiBRAVA", // 1
+        "Você é muito ruim, podre, lixo raissa11Faquinha", // 2
+        "Vai tomando raissa11NEA",            // 3
+        "Certeza que sua mãe usa saia Kappa", // 4
+        "Beijos da tia Thy 🥰",               // 5
+        "MANO, VOCÊ SABE QUE TEM 4 GEN UP SEU FILHO DA PULGA raissa11RaiBRAVA", // 6
+        "Vai dar meia hora com relógio parado 🤭", // 7
+        "Vai taca taca taca 🎶",              // 8
+        "Bom dia senhora raissa112anosdecanal", // 9
+        "Eu sou uma rata senhoraa raissa11RAI", // 10
+        "Sua mãe toma banho em pé CoolCat",   // 11
+        "Sua mãe dorme deitada NotLikeThis",  // 12
+        "Sua mãe nasceu pelada BabyRage",     // 13
+        "Vem meu casquinha de bala KomodoHype", // 14
+        "Eu te batizo em nome de Jane Romero FBBlock", // 15
+        "Toma então, batizado PowerUpR",      // 16
+        "Bruxa, fedida, tomara que te dor de barriga 🎶", // 17
     ];
 
-    let mut rng = rand::rng();
     let sentence = match id {
         Some(id) => sentences[id],
-        None => sentences.choose(&mut rng).unwrap(),
+        None => {
+            let mut rng = rand::rng();
+            sentences.choose(&mut rng).unwrap()
+        }
     };
 
     sentence.to_string()
@@ -43,10 +44,12 @@ pub fn get_sentence_jonhsullivan(id: Option<usize>) -> String {
         "Main Killer safado.",
     ];
 
-    let mut rng = rand::rng();
     let sentence = match id {
         Some(id) => sentences[id],
-        None => sentences.choose(&mut rng).unwrap(),
+        None => {
+            let mut rng = rand::rng();
+            sentences.choose(&mut rng).unwrap()
+        }
     };
 
     sentence.to_string()
