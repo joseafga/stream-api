@@ -1,4 +1,5 @@
 use axum::{Router, error_handling::HandleErrorLayer, http::StatusCode, routing::get};
+use axum_response_cache::CacheLayer;
 use std::time::Duration;
 use tower::{BoxError, ServiceBuilder};
 use tower_http::trace::TraceLayer;
@@ -26,6 +27,8 @@ async fn main() {
             get(steam::get_hours_played),
         )
         .route("/sentence/{*name}", get(sentence::get_sentence))
+        // Cache responses for 60 seconds.
+        .layer(CacheLayer::with_lifespan(60))
         // Add middleware to all routes
         .layer(
             ServiceBuilder::new()
