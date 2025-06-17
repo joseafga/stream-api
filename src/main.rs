@@ -23,15 +23,19 @@ async fn main() {
     // Compose the routes
     let app = Router::new()
         .route("/", get(|| async { "Hello from Stream API!" }))
+        .route("/sentence/{*name}", get(sentence::get_sentence))
         .route(
             "/steam/{steamid}/{appid}/hours",
-            get(steam::get_hours_played),
+            get(steam::get_hours_played).layer(CacheLayer::with_lifespan(60 * 60)),
         )
-        .route("/sentence/{*name}", get(sentence::get_sentence))
-        .route("/youtube/{channel}/video", get(youtube::get_last_video))
-        .route("/youtube/{channel}/short", get(youtube::get_last_short))
-        // Cache responses for 60 seconds.
-        .layer(CacheLayer::with_lifespan(60))
+        .route(
+            "/youtube/{channel}/video",
+            get(youtube::get_last_video).layer(CacheLayer::with_lifespan(60)),
+        )
+        .route(
+            "/youtube/{channel}/short",
+            get(youtube::get_last_short).layer(CacheLayer::with_lifespan(60)),
+        )
         // Add middleware to all routes
         .layer(
             ServiceBuilder::new()
