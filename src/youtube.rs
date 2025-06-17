@@ -49,6 +49,7 @@ pub fn check_your_mom(channel: &String) -> Option<()> {
 }
 
 pub async fn get_last_video(Path(channel): Path<String>) -> Result<String, StatusCode> {
+    tracing::debug!("getting last video from channel={}", channel);
     check_your_mom(&channel).ok_or(StatusCode::BAD_REQUEST)?;
 
     let url = format!("https://www.youtube.com/@{channel}/videos");
@@ -64,6 +65,7 @@ pub async fn get_last_video(Path(channel): Path<String>) -> Result<String, Statu
 }
 
 pub async fn get_last_short(Path(channel): Path<String>) -> Result<String, StatusCode> {
+    tracing::debug!("getting last short from channel={}", channel);
     check_your_mom(&channel).ok_or(StatusCode::BAD_REQUEST)?;
 
     let url = format!("https://www.youtube.com/@{channel}/shorts");
@@ -79,6 +81,8 @@ pub async fn get_last_short(Path(channel): Path<String>) -> Result<String, Statu
 }
 
 async fn fetch_last_entry(url: &str) -> Result<Entry, Box<dyn std::error::Error>> {
+    tracing::debug!("running yt-dlp");
+
     let output = Command::new("yt-dlp")
         .args(["--dump-json", "--no-download", "--flat-playlist", url])
         .output()

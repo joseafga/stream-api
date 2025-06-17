@@ -11,6 +11,7 @@ pub fn check_your_mom(steamid: u64) -> Option<()> {
 pub async fn get_hours_played(
     Path((steamid, appid)): Path<(u64, u32)>,
 ) -> Result<impl IntoResponse, StatusCode> {
+    tracing::debug!("getting Steam hours steamid={} appid={}", steamid, appid);
     // Get the Steam API Key as an environment variable.
     let steam_api_key = &std::env::var("STEAM_API_KEY").expect("Missing an API key");
     check_your_mom(steamid).ok_or(StatusCode::BAD_REQUEST)?;
