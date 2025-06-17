@@ -7,6 +7,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod sentence;
 mod steam;
+mod youtube;
 
 #[tokio::main]
 async fn main() {
@@ -27,6 +28,8 @@ async fn main() {
             get(steam::get_hours_played),
         )
         .route("/sentence/{*name}", get(sentence::get_sentence))
+        .route("/youtube/{channel}/video", get(youtube::get_last_video))
+        .route("/youtube/{channel}/short", get(youtube::get_last_short))
         // Cache responses for 60 seconds.
         .layer(CacheLayer::with_lifespan(60))
         // Add middleware to all routes

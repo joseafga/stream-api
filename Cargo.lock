@@ -1019,6 +1019,7 @@ dependencies = [
  "axum-response-cache",
  "rand",
  "serde",
+ "serde_json",
  "steam-rs",
  "tokio",
  "tower",
