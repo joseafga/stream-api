@@ -15,6 +15,9 @@ RUN cargo build --release --bin stream-api
 
 # We do not need the Rust toolchain to run the binary!
 FROM debian:bookworm-slim AS runtime
+RUN apt-get update && apt-get install -y python3-pip
+RUN pip install --break-system-packages -U yt-dlp
+
 WORKDIR /app
 COPY --from=builder /app/target/release/stream-api /usr/local/bin
 ENTRYPOINT ["/usr/local/bin/stream-api"]
