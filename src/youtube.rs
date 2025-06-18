@@ -40,14 +40,6 @@ struct Entry {
     webpage_url_domain: String,
 }
 
-pub fn check_your_mom(channel: &String) -> Option<()> {
-    match channel.as_str() {
-        "raixssa" => Some(()),
-        "elakstriker" => Some(()),
-        _ => None,
-    }
-}
-
 pub async fn get_last_video(Path(channel): Path<String>) -> Result<String, StatusCode> {
     tracing::debug!("getting last video from channel={}", channel);
     check_your_mom(&channel).ok_or(StatusCode::BAD_REQUEST)?;
@@ -96,4 +88,12 @@ async fn fetch_last_entry(url: &str) -> Result<Entry, Box<dyn std::error::Error>
     let json = serde_json::from_str(line.unwrap().as_str())?;
 
     Ok(json)
+}
+
+fn check_your_mom(channel: &String) -> Option<()> {
+    match channel.as_str() {
+        "raixssa" => Some(()),
+        "elakstriker" => Some(()),
+        _ => None,
+    }
 }
