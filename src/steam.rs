@@ -1,5 +1,10 @@
 use axum::{extract::Path, http::StatusCode, response::IntoResponse};
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
+use reqwest_tracing::TracingMiddleware;
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
+use tracing::instrument;
 
 #[derive(Debug, Serialize)]
 struct OwnedGamesRequest {
@@ -29,16 +34,30 @@ struct Game {
     playtime_forever: u32,
 }
 
+#[instrument]
 pub async fn get_hours_played(
     Path((steamid, appid)): Path<(u64, u32)>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    tracing::debug!("getting Steam hours steamid={} appid={}", steamid, appid);
     check_your_mom(steamid).ok_or(StatusCode::BAD_REQUEST)?;
 
-    let owned_games = match get_owned_games(steamid, appid).await {
+    let retry_policy = ExponentialBackoff::builder()
+        .retry_bounds(Duration::from_millis(500), Duration::from_millis(3000))
+        .build_with_max_retries(5);
+    let client = ClientBuilder::new(reqwest::Client::new())
+        // Trace HTTP requests. See the tracing crate to make use of these traces.
+        .with(TracingMiddleware::default())
+        // Retry failed requests.
+        .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+        .build();
+
+    let owned_games = match get_owned_games(client, steamid, appid).await {
         Ok(owned_games) => owned_games,
-        Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Err(e) => {
+            tracing::error!("getting owned games error={:?}", e);
+            return Err(StatusCode::INTERNAL_SERVER_ERROR);
+        }
     };
+    tracing::debug!("steam owned_games={:?}", owned_games);
 
     // Check if the user owns the game
     // Note: will be only one game in the list because we are using `appids_filter`
@@ -48,7 +67,10 @@ pub async fn get_hours_played(
         .and_then(|g| g.first())
         .ok_or(StatusCode::NOT_FOUND)?;
 
-    assert_eq!(game.appid, appid);
+    if game.appid != appid {
+        tracing::error!("Game ID mismatch: expected={}, got={}", appid, game.appid);
+        return Err(StatusCode::INTERNAL_SERVER_ERROR);
+    }
 
     // Convert minutes to hours
     let hours = game.playtime_forever / 60;
@@ -56,6 +78,7 @@ pub async fn get_hours_played(
 }
 
 async fn get_owned_games(
+    client: ClientWithMiddleware,
     steamid: u64,
     appid: u32,
 ) -> Result<OwnedGames, Box<dyn std::error::Error>> {
@@ -79,15 +102,17 @@ async fn get_owned_games(
         ("input_json", json),
     ];
 
-    let client = reqwest::Client::new();
     let response = client
         .get("https://api.steampowered.com/IPlayerService/GetOwnedGames/v1")
         .query(&params)
         .send()
         .await?;
 
+    if !response.status().is_success() {
+        return Err(format!("Request failed with status {}", response.status()).into());
+    }
+
     let owned_games: OwnedGamesResponse = response.json().await?;
-    tracing::debug!("steam owned_games={:?}", owned_games.response);
 
     Ok(owned_games.response)
 }
