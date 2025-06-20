@@ -3,7 +3,6 @@ use axum_response_cache::CacheLayer;
 use std::time::Duration;
 use tower::{BoxError, ServiceBuilder};
 use tower_http::trace::TraceLayer;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod sentence;
 mod steam;
@@ -11,13 +10,9 @@ mod youtube;
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-                format!("{}=debug,tower_http=debug", env!("CARGO_CRATE_NAME")).into()
-            }),
-        )
-        .with(tracing_subscriber::fmt::layer())
+    tracing_subscriber::fmt()
+        // .with_max_level(tracing::Level::TRACE)
+        .with_env_filter("info,stream_api=debug,tower_http=debug,reqwest_retry=trace")
         .init();
 
     // Compose the routes
@@ -49,7 +44,7 @@ async fn main() {
                         ))
                     }
                 }))
-                .timeout(Duration::from_secs(10))
+                .timeout(Duration::from_secs(60))
                 .layer(TraceLayer::new_for_http())
                 .into_inner(),
         );
