@@ -1,6 +1,8 @@
-use axum::{Router, error_handling::HandleErrorLayer, http::StatusCode, routing::get};
+use crate::steam::OwnedGames;
+use axum::{Extension, Router, error_handling::HandleErrorLayer, http::StatusCode, routing::get};
 use axum_response_cache::CacheLayer;
-use std::time::Duration;
+use std::{collections::HashMap, sync::Arc, time::Duration};
+use tokio::sync::Mutex;
 use tower::{BoxError, ServiceBuilder};
 use tower_http::trace::TraceLayer;
 
@@ -8,8 +10,24 @@ mod sentence;
 mod steam;
 mod youtube;
 
+// Cache shared across requests
+#[derive(Debug, Clone)]
+struct GamesState {
+    cache: Arc<Mutex<HashMap<String, OwnedGames>>>,
+}
+
+impl GamesState {
+    fn new() -> Self {
+        Self {
+            cache: Arc::new(Mutex::new(HashMap::new())),
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() {
+    let games_state = GamesState::new();
+
     tracing_subscriber::fmt()
         // .with_max_level(tracing::Level::TRACE)
         .with_env_filter("info,stream_api=debug,tower_http=debug,reqwest_retry=trace")
@@ -21,7 +39,9 @@ async fn main() {
         .route("/sentence/{*name}", get(sentence::get_sentence))
         .route(
             "/steam/{steamid}/{appid}/hours",
-            get(steam::get_hours_played).layer(CacheLayer::with_lifespan(60 * 60)),
+            get(steam::get_hours_played)
+                .layer(Extension(games_state))
+                .layer(CacheLayer::with_lifespan(60 * 60)),
         )
         .route(
             "/youtube/{channel}/video",

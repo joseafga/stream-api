@@ -1,4 +1,5 @@
-use axum::{extract::Path, http::StatusCode, response::IntoResponse};
+use crate::GamesState;
+use axum::{Extension, extract::Path, http::StatusCode, response::IntoResponse};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
 use reqwest_tracing::TracingMiddleware;
@@ -7,7 +8,7 @@ use std::time::Duration;
 use tracing::instrument;
 
 #[derive(Debug, Serialize)]
-struct OwnedGamesRequest {
+pub struct OwnedGamesRequest {
     steamid: u64,
     include_appinfo: bool,
     include_played_free_games: bool,
@@ -18,18 +19,18 @@ struct OwnedGamesRequest {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct OwnedGamesResponse {
+pub struct OwnedGamesResponse {
     response: OwnedGames,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct OwnedGames {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct OwnedGames {
     game_count: u32,
     games: Option<Vec<Game>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Game {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Game {
     appid: u32,
     playtime_forever: u32,
 }
@@ -37,6 +38,7 @@ struct Game {
 #[instrument]
 pub async fn get_hours_played(
     Path((steamid, appid)): Path<(u64, u32)>,
+    Extension(state): Extension<GamesState>,
 ) -> Result<impl IntoResponse, StatusCode> {
     check_your_mom(steamid).ok_or(StatusCode::BAD_REQUEST)?;
 
@@ -50,7 +52,7 @@ pub async fn get_hours_played(
         .with(RetryTransientMiddleware::new_with_policy(retry_policy))
         .build();
 
-    let owned_games = match get_owned_games(client, steamid, appid).await {
+    let owned_games = match get_owned_games(client, steamid, appid, state).await {
         Ok(owned_games) => owned_games,
         Err(e) => {
             tracing::error!("getting owned games error={:?}", e);
@@ -81,6 +83,7 @@ async fn get_owned_games(
     client: ClientWithMiddleware,
     steamid: u64,
     appid: u32,
+    state: GamesState,
 ) -> Result<OwnedGames, Box<dyn std::error::Error>> {
     // Get the Steam API Key as an environment variable.
     let steam_api_key = std::env::var("STEAM_API_KEY").expect("Missing an API key");
@@ -108,11 +111,26 @@ async fn get_owned_games(
         .send()
         .await?;
 
+    let cache_key = format!("{}:{}", steamid, appid);
+    let mut cache = state.cache.lock().await; // Lock to get or insert cache
+
+    // Resquest fail, try use cache
     if !response.status().is_success() {
-        return Err(format!("Request failed with status {}", response.status()).into());
+        return match cache.get(&cache_key) {
+            Some(cached) => {
+                tracing::warn!("Request failed, using cached games");
+                Ok(cached.clone())
+            }
+            None => {
+                tracing::error!("Request failed and no cache available");
+                Err(format!("Request failed with status: {}", response.status()).into())
+            }
+        };
     }
 
+    // All right: parse response and update cache
     let owned_games: OwnedGamesResponse = response.json().await?;
+    cache.insert(cache_key, owned_games.response.clone());
 
     Ok(owned_games.response)
 }
