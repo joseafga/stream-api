@@ -1,4 +1,4 @@
-use crate::GamesState;
+use crate::state::GamesState;
 use axum::{Extension, extract::Path, http::StatusCode, response::IntoResponse};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};

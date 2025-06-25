@@ -1,4 +1,4 @@
-use crate::WinsState;
+use crate::state::WinsState;
 use axum::{Extension, extract::Path, response::IntoResponse};
 use reqwest::StatusCode;
 

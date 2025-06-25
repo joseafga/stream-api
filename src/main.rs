@@ -1,37 +1,19 @@
-use crate::steam::OwnedGames;
 use axum::{Extension, Router, error_handling::HandleErrorLayer, http::StatusCode, routing::get};
 use axum_response_cache::CacheLayer;
-use std::{collections::HashMap, sync::Arc, time::Duration};
-use tokio::sync::Mutex;
+use std::time::Duration;
 use tower::{BoxError, ServiceBuilder};
 use tower_http::trace::TraceLayer;
 
 mod sentence;
+pub mod state;
 mod steam;
 mod win;
 mod youtube;
 
-// Cache shared across requests
-#[derive(Debug, Clone)]
-struct State<T> {
-    cache: Arc<Mutex<HashMap<String, T>>>,
-}
-
-impl<T> State<T> {
-    fn new() -> Self {
-        Self {
-            cache: Arc::new(Mutex::new(HashMap::new())),
-        }
-    }
-}
-
-type GamesState = State<OwnedGames>;
-type WinsState = State<u32>;
-
 #[tokio::main]
 async fn main() {
-    let games_state = GamesState::new();
-    let wins_state = WinsState::new();
+    let games_state = state::GamesState::new();
+    let wins_state = state::WinsState::new();
 
     tracing_subscriber::fmt()
         // .with_max_level(tracing::Level::TRACE)
