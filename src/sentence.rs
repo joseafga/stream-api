@@ -1,6 +1,5 @@
 use axum::{extract::Path, http::StatusCode, response::IntoResponse};
 use rand::seq::IndexedRandom;
-use tracing::instrument;
 
 pub fn get_sentence_thyria(id: Option<usize>) -> String {
     let sentences = [
@@ -56,7 +55,6 @@ pub fn get_sentence_jonhsullivan(id: Option<usize>) -> String {
     sentence.to_string()
 }
 
-#[instrument]
 pub async fn get_sentence(Path(name): Path<String>) -> Result<impl IntoResponse, StatusCode> {
     // Get vector from Streamelements argument
     let elements: Vec<String> = name

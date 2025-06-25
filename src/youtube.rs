@@ -52,7 +52,7 @@ pub async fn get_last_video(Path(channel): Path<String>) -> Result<String, Statu
     match response {
         Ok(entry) => Ok(format!("{} - {}", entry.title, entry.url)),
         Err(e) => {
-            println!("Error: {:#?}", e.to_string());
+            tracing::error!("Fetch error: {:#?}", e.to_string());
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
@@ -69,7 +69,7 @@ pub async fn get_last_short(Path(channel): Path<String>) -> Result<String, Statu
     match response {
         Ok(entry) => Ok(format!("{} - {}", entry.title, entry.url)),
         Err(e) => {
-            println!("Error: {:#?}", e.to_string());
+            tracing::error!("Fetch error: {:#?}", e.to_string());
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }
