@@ -12,17 +12,19 @@ mod youtube;
 
 // Cache shared across requests
 #[derive(Debug, Clone)]
-struct GamesState {
-    cache: Arc<Mutex<HashMap<String, OwnedGames>>>,
+struct State<T> {
+    cache: Arc<Mutex<HashMap<String, T>>>,
 }
 
-impl GamesState {
+impl<T> State<T> {
     fn new() -> Self {
         Self {
             cache: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 }
+
+type GamesState = State<OwnedGames>;
 
 #[tokio::main]
 async fn main() {
