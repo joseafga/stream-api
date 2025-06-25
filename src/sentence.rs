@@ -1,7 +1,9 @@
 use axum::{extract::Path, http::StatusCode, response::IntoResponse};
 use rand::seq::IndexedRandom;
 
-pub fn get_sentence_thyria(id: Option<usize>) -> String {
+const NO_SENTENCE: &str = "nenhuma frase disponível.";
+
+pub fn get_sentence_thyria(index: Option<usize>) -> String {
     let sentences = [
         "não me tira, não me tira GlitchNRG", // 0
         "antes que eu me esqueça, vai tomar no cool raissa11RaiBRAVA", // 1
@@ -23,18 +25,10 @@ pub fn get_sentence_thyria(id: Option<usize>) -> String {
         "bruxa, fedida, tomara que te dor de barriga 🎶", // 17
     ];
 
-    let sentence = match id {
-        Some(id) => sentences[id],
-        None => {
-            let mut rng = rand::rng();
-            sentences.choose(&mut rng).unwrap()
-        }
-    };
-
-    sentence.to_string()
+    select_sentence(&sentences, index)
 }
 
-pub fn get_sentence_jonhsullivan(id: Option<usize>) -> String {
+pub fn get_sentence_jonhsullivan(index: Option<usize>) -> String {
     let sentences = [
         "seven minutes is all I can spare to play with you.",
         "poor performance indeed.",
@@ -44,20 +38,12 @@ pub fn get_sentence_jonhsullivan(id: Option<usize>) -> String {
         "main killer safado.",
     ];
 
-    let sentence = match id {
-        Some(id) => sentences[id],
-        None => {
-            let mut rng = rand::rng();
-            sentences.choose(&mut rng).unwrap()
-        }
-    };
-
-    sentence.to_string()
+    select_sentence(&sentences, index)
 }
 
 pub async fn get_sentence(Path(name): Path<String>) -> Result<impl IntoResponse, StatusCode> {
     // Get vector from Streamelements argument
-    let elements: Vec<String> = name
+    let args: Vec<String> = name
         .trim()
         .to_lowercase()
         .split_whitespace()
@@ -66,12 +52,30 @@ pub async fn get_sentence(Path(name): Path<String>) -> Result<impl IntoResponse,
         .collect();
 
     // Filter possible second argument
-    let arg: Option<usize> = elements.get(1).and_then(|s| s.parse::<usize>().ok());
-    let sentence = match elements[0].as_str() {
-        "thyria" => get_sentence_thyria(arg),
-        "jonhsullivan" => get_sentence_jonhsullivan(arg),
+    let index: Option<usize> = args.get(1).and_then(|s| s.parse::<usize>().ok());
+    let sentence = match args[0].as_str() {
+        "thyria" => get_sentence_thyria(index),
+        "jonhsullivan" => get_sentence_jonhsullivan(index),
         _ => String::from("comando desconhecido."),
     };
 
     Ok(sentence)
+}
+
+fn select_sentence(sentences: &[&str], index: Option<usize>) -> String {
+    let sentence = match index {
+        Some(i) => {
+            if i < sentences.len() {
+                sentences[i]
+            } else {
+                sentences.first().unwrap_or(&NO_SENTENCE)
+            }
+        }
+        None => {
+            let mut rng = rand::rng();
+            sentences.choose(&mut rng).unwrap_or(&NO_SENTENCE)
+        }
+    };
+
+    sentence.to_string()
 }
