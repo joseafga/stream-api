@@ -8,6 +8,7 @@ use tower_http::trace::TraceLayer;
 
 mod sentence;
 mod steam;
+mod win;
 mod youtube;
 
 // Cache shared across requests
@@ -25,10 +26,12 @@ impl<T> State<T> {
 }
 
 type GamesState = State<OwnedGames>;
+type WinsState = State<u32>;
 
 #[tokio::main]
 async fn main() {
     let games_state = GamesState::new();
+    let wins_state = WinsState::new();
 
     tracing_subscriber::fmt()
         // .with_max_level(tracing::Level::TRACE)
@@ -52,6 +55,10 @@ async fn main() {
         .route(
             "/youtube/{channel}/short",
             get(youtube::get_last_short).layer(CacheLayer::with_lifespan(60)),
+        )
+        .route(
+            "/win/{key}/{command}",
+            get(win::get_win).layer(Extension(wins_state)),
         )
         // Add middleware to all routes
         .layer(
