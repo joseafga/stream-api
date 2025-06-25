@@ -2,6 +2,7 @@ use axum::{extract::Path, http::StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{io::BufRead, process::Command};
+use tracing::instrument;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Thumbnail {
@@ -40,6 +41,7 @@ struct Entry {
     webpage_url_domain: String,
 }
 
+#[instrument]
 pub async fn get_last_video(Path(channel): Path<String>) -> Result<String, StatusCode> {
     tracing::debug!("getting last video from channel={}", channel);
     check_your_mom(&channel).ok_or(StatusCode::BAD_REQUEST)?;
@@ -56,6 +58,7 @@ pub async fn get_last_video(Path(channel): Path<String>) -> Result<String, Statu
     }
 }
 
+#[instrument]
 pub async fn get_last_short(Path(channel): Path<String>) -> Result<String, StatusCode> {
     tracing::debug!("getting last short from channel={}", channel);
     check_your_mom(&channel).ok_or(StatusCode::BAD_REQUEST)?;
