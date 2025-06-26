@@ -138,6 +138,7 @@ async fn get_owned_games(
 fn check_your_mom(steamid: u64) -> Option<()> {
     match steamid {
         76561199118689987 => Some(()),
+        76561198943150265 => Some(()),
         _ => None,
     }
 }
