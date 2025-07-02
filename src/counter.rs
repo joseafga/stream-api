@@ -30,7 +30,12 @@ pub async fn command_handler(
 
     let cached = match state.cache.get(&key).await {
         Some(cached) => cached.clone(),
-        None => 0,
+        None => {
+            // Create cache key
+            let initial_value = 0;
+            state.cache.insert(key.clone(), initial_value).await;
+            initial_value
+        }
     };
 
     let value = match args[0].as_str() {
@@ -43,7 +48,7 @@ pub async fn command_handler(
 
     // New value
     if value != cached {
-        state.cache.insert(key, value.clone()).await;
+        state.cache.insert(key.clone(), value.clone()).await;
 
         let msg = CounterMessage { counter: value };
         if let Ok(json) = serde_json::to_string(&msg) {
