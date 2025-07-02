@@ -8,7 +8,7 @@ use axum_response_cache::CacheLayer;
 use std::{sync::Arc, time::Duration};
 use tokio::sync::broadcast;
 use tower::{BoxError, ServiceBuilder};
-use tower_http::trace::TraceLayer;
+use tower_http::{services::ServeDir, trace::TraceLayer};
 
 pub mod cache;
 mod counter;
@@ -56,6 +56,8 @@ async fn main() {
             "/counter/{key}/{command}",
             get(counter::command_handler).with_state(counter_state.clone()),
         )
+        // Static pages
+        .nest_service("/pages", ServeDir::new("web"))
         // Add middleware to all routes
         .layer(
             ServiceBuilder::new()
