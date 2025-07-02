@@ -1,10 +1,14 @@
-use crate::state::WinsState;
-use axum::{Extension, extract::Path, response::IntoResponse};
+use crate::cache::{WinsMessage, WinsState};
+use axum::{
+    extract::{Path, State},
+    response::IntoResponse,
+};
 use reqwest::StatusCode;
+use std::sync::Arc;
 
 pub async fn get_win(
     Path((key, command)): Path<(String, String)>,
-    Extension(state): Extension<WinsState>,
+    State(state): State<Arc<WinsState>>,
 ) -> Result<impl IntoResponse, StatusCode> {
     // TODO: Implement restriction
     // check_your_mom(key.as_str()).ok_or(StatusCode::BAD_REQUEST)?;
@@ -20,48 +24,55 @@ pub async fn get_win(
 
     // Filter possible second argument
     let amount: Option<u32> = args.get(1).and_then(|s| s.parse::<u32>().ok());
-    let mut cache = state.cache.lock().await;
 
-    let value = match cache.get(&key) {
+    let cached = match state.cache.get(&key).await {
         Some(cached) => cached.clone(),
         None => 0,
     };
 
     let value = match args[0].as_str() {
-        "_get" => value,
-        "_set" => win_set(value, amount),
-        "_inc" | "_increment" | "_add" | "_+" => win_increment(value, amount),
-        "_dec" | "_decrement" | "_-" => win_decrement(value, amount),
-        _ => value,
+        "_get" => cached,
+        "_set" => set(cached, amount),
+        "_inc" | "_increment" | "_add" | "_+" => increment(cached, amount),
+        "_dec" | "_decrement" | "_-" => decrement(cached, amount),
+        _ => cached,
     };
 
-    cache.insert(key, value.clone());
+    // New value
+    if value != cached {
+        state.cache.insert(key, value.clone()).await;
+
+        let msg = WinsMessage { wins: value };
+        if let Ok(json) = serde_json::to_string(&msg) {
+            let _ = state.sender.send(json);
+        }
+    }
 
     Ok(value.to_string())
 }
 
-fn win_set(cached: u32, value: Option<u32>) -> u32 {
+fn set(stored: u32, value: Option<u32>) -> u32 {
     match value {
         Some(value) => value,
-        None => cached,
+        None => stored,
     }
 }
 
-fn win_increment(cached: u32, increment: Option<u32>) -> u32 {
+fn increment(stored: u32, increment: Option<u32>) -> u32 {
     match increment {
-        Some(increment) => cached + increment,
-        None => cached + 1,
+        Some(increment) => stored + increment,
+        None => stored + 1,
     }
 }
 
-fn win_decrement(cached: u32, decrement: Option<u32>) -> u32 {
+fn decrement(stored: u32, decrement: Option<u32>) -> u32 {
     // Prevent subtract overflow
-    if cached == 0 {
+    if stored == 0 {
         return 0;
     }
 
     match decrement {
-        Some(decrement) => cached - decrement,
-        None => cached - 1,
+        Some(decrement) => stored - decrement,
+        None => stored - 1,
     }
 }

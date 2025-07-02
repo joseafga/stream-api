@@ -1,4 +1,4 @@
-use crate::state::GamesState;
+use crate::cache::GamesState;
 use axum::{Extension, extract::Path, http::StatusCode, response::IntoResponse};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{RetryTransientMiddleware, policies::ExponentialBackoff};
@@ -112,11 +112,10 @@ async fn get_owned_games(
         .await?;
 
     let cache_key = format!("{}:{}", steamid, appid);
-    let mut cache = state.cache.lock().await; // Lock to get or insert cache
 
     // Resquest fail, try use cache
     if !response.status().is_success() {
-        return match cache.get(&cache_key) {
+        return match state.get(&cache_key).await {
             Some(cached) => {
                 tracing::warn!("Request failed, using cached games");
                 Ok(cached.clone())
@@ -130,7 +129,7 @@ async fn get_owned_games(
 
     // All right: parse response and update cache
     let owned_games: OwnedGamesResponse = response.json().await?;
-    cache.insert(cache_key, owned_games.response.clone());
+    state.insert(cache_key, owned_games.response.clone()).await;
 
     Ok(owned_games.response)
 }
