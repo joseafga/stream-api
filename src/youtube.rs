@@ -44,7 +44,7 @@ struct Entry {
 #[instrument]
 pub async fn get_last_video(Path(channel): Path<String>) -> Result<String, StatusCode> {
     tracing::debug!("getting last video from channel={}", channel);
-    check_your_mom(&channel).ok_or(StatusCode::BAD_REQUEST)?;
+    check_your_mom(&channel).ok_or(StatusCode::UNAUTHORIZED)?;
 
     let url = format!("https://www.youtube.com/@{channel}/videos");
     let response = fetch_last_entry(&url).await;

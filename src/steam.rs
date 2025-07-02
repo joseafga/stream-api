@@ -40,7 +40,7 @@ pub async fn get_hours_played(
     Path((steamid, appid)): Path<(u64, u32)>,
     Extension(state): Extension<GamesState>,
 ) -> Result<impl IntoResponse, StatusCode> {
-    check_your_mom(steamid).ok_or(StatusCode::BAD_REQUEST)?;
+    check_your_mom(steamid).ok_or(StatusCode::UNAUTHORIZED)?;
 
     let retry_policy = ExponentialBackoff::builder()
         .retry_bounds(Duration::from_millis(500), Duration::from_millis(3000))
