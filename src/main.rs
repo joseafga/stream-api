@@ -6,6 +6,7 @@ use tower::{BoxError, ServiceBuilder};
 use tower_http::trace::TraceLayer;
 
 pub mod cache;
+mod counter;
 mod sentence;
 mod steam;
 mod win;
@@ -15,7 +16,7 @@ mod youtube;
 async fn main() {
     let (tx, _) = broadcast::channel(100);
     let games_state = cache::GamesState::new();
-    let wins_state = Arc::new(cache::WinsState {
+    let counter_state = Arc::new(cache::CounterState {
         cache: cache::Cache::new(),
         sender: tx,
     });
@@ -44,8 +45,8 @@ async fn main() {
             get(youtube::get_last_short).layer(CacheLayer::with_lifespan(60)),
         )
         .route(
-            "/win/{key}/{command}",
-            get(win::get_win).with_state(wins_state.clone()),
+            "/counter/{key}/{command}",
+            get(counter::command_handler).with_state(counter_state),
         )
         // Add middleware to all routes
         .layer(

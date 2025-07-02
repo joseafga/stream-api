@@ -30,12 +30,12 @@ impl<T> Cache<T> {
 }
 
 pub type GamesState = Cache<OwnedGames>;
-pub struct WinsState {
+pub struct CounterState {
     pub cache: Cache<u32>,
     pub sender: broadcast::Sender<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WinsMessage {
-    pub wins: u32,
+pub struct CounterMessage {
+    pub counter: u32,
 }

@@ -1,4 +1,4 @@
-use crate::cache::{WinsMessage, WinsState};
+use crate::cache::{CounterMessage, CounterState};
 use axum::{
     extract::{Path, State},
     response::IntoResponse,
@@ -6,9 +6,9 @@ use axum::{
 use reqwest::StatusCode;
 use std::sync::Arc;
 
-pub async fn get_win(
+pub async fn command_handler(
     Path((key, command)): Path<(String, String)>,
-    State(state): State<Arc<WinsState>>,
+    State(state): State<Arc<CounterState>>,
 ) -> Result<impl IntoResponse, StatusCode> {
     // TODO: Implement restriction
     // check_your_mom(key.as_str()).ok_or(StatusCode::BAD_REQUEST)?;
@@ -42,7 +42,7 @@ pub async fn get_win(
     if value != cached {
         state.cache.insert(key, value.clone()).await;
 
-        let msg = WinsMessage { wins: value };
+        let msg = CounterMessage { counter: value };
         if let Ok(json) = serde_json::to_string(&msg) {
             let _ = state.sender.send(json);
         }
