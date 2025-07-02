@@ -1,4 +1,9 @@
-use axum::{Extension, Router, error_handling::HandleErrorLayer, http::StatusCode, routing::get};
+use axum::{
+    Extension, Router,
+    error_handling::HandleErrorLayer,
+    http::StatusCode,
+    routing::{any, get},
+};
 use axum_response_cache::CacheLayer;
 use std::{sync::Arc, time::Duration};
 use tokio::sync::broadcast;
@@ -9,7 +14,6 @@ pub mod cache;
 mod counter;
 mod sentence;
 mod steam;
-mod win;
 mod youtube;
 
 #[tokio::main]
@@ -45,8 +49,12 @@ async fn main() {
             get(youtube::get_last_short).layer(CacheLayer::with_lifespan(60)),
         )
         .route(
+            "/counter/{key}/ws",
+            any(counter::ws_handler).with_state(counter_state.clone()),
+        )
+        .route(
             "/counter/{key}/{command}",
-            get(counter::command_handler).with_state(counter_state),
+            get(counter::command_handler).with_state(counter_state.clone()),
         )
         // Add middleware to all routes
         .layer(

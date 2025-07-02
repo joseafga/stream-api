@@ -1,9 +1,12 @@
 use crate::cache::{CounterMessage, CounterState};
 use axum::{
-    extract::{Path, State},
-    response::IntoResponse,
+    extract::{
+        Path, State,
+        ws::{CloseFrame, Message, Utf8Bytes, WebSocket, WebSocketUpgrade},
+    },
+    http::StatusCode,
+    response::{IntoResponse, Response},
 };
-use reqwest::StatusCode;
 use std::sync::Arc;
 
 pub async fn command_handler(
@@ -74,5 +77,48 @@ fn decrement(stored: u32, decrement: Option<u32>) -> u32 {
     match decrement {
         Some(decrement) => stored - decrement,
         None => stored - 1,
+    }
+}
+
+pub async fn ws_handler(
+    ws: WebSocketUpgrade,
+    Path(key): Path<String>,
+    State(state): State<Arc<CounterState>>,
+) -> Response {
+    ws.on_upgrade(|socket| ws_handle_socket(socket, key, state))
+}
+
+pub async fn ws_handle_socket(mut socket: WebSocket, key: String, state: Arc<CounterState>) {
+    let mut rx = state.sender.subscribe();
+
+    // Check if the key exists in the cache
+    let cached = match state.cache.get(&key).await {
+        Some(cached) => cached,
+        None => {
+            return {
+                let reason = CloseFrame {
+                    code: 1008, // Policy Violation
+                    reason: Utf8Bytes::from("Invalid key!"),
+                };
+
+                let _ = socket.send(Message::Close(Some(reason))).await;
+                tracing::info!("invalid websocket: {}", key);
+            };
+        }
+    };
+
+    // Send the current state on connect
+    let msg = CounterMessage { counter: cached };
+    if let Ok(json) = serde_json::to_string(&msg) {
+        let _ = state.sender.send(json);
+    }
+
+    while let Ok(msg) = rx.recv().await {
+        tracing::debug!("websocket received: {:?}", msg);
+
+        if socket.send(Message::Text(msg.into())).await.is_err() {
+            tracing::debug!("websocket closed: {}", key);
+            break;
+        }
     }
 }

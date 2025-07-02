@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-axum = "0.8.4"
+axum = { version = "0.8.4", features = ["ws"] }
 axum-response-cache = "0.3.0"
 rand = "0.9.1"
 reqwest = { version = "0.12.20", features = ["json"] }
