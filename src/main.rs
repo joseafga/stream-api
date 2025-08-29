@@ -57,7 +57,7 @@ async fn main() {
             get(counter::command_handler).with_state(counter_state.clone()),
         )
         // Static pages
-        .nest_service("/pages", ServeDir::new("web"))
+        .nest_service("/pages", ServeDir::new("pages"))
         // Add middleware to all routes
         .layer(
             ServiceBuilder::new()
