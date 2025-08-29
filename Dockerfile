@@ -20,4 +20,5 @@ RUN pip install --break-system-packages -U yt-dlp
 
 WORKDIR /app
 COPY --from=builder /app/target/release/stream-api /usr/local/bin
+COPY ./pages /app/pages
 ENTRYPOINT ["/usr/local/bin/stream-api"]
